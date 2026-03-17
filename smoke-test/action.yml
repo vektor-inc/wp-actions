@@ -1,0 +1,34 @@
+name: WordPress Smoke Test
+description: Basic smoke test for WordPress - checks HTTP status and PHP errors on frontend and WP Admin.
+
+inputs:
+    url:
+        description: Base URL of the WordPress site
+        required: false
+        default: 'http://localhost:8888'
+
+runs:
+    using: composite
+    steps:
+        - name: Smoke Test
+          shell: bash
+          run: |
+            echo "=== Smoke Test ==="
+
+            response=$(curl -s -o /dev/null -w "%{http_code}" ${{ inputs.url }})
+            echo "Frontend HTTP: $response"
+            [ "$response" = "200" ] || { echo "FAIL: Frontend not accessible"; exit 1; }
+
+            body=$(curl -s ${{ inputs.url }})
+            if echo "$body" | grep -qi "Fatal error\|Parse error\|Warning.*PHP"; then
+              echo "FAIL: PHP error detected on frontend"
+              echo "$body" | grep -i "Fatal error\|Parse error\|Warning.*PHP" | head -5
+              exit 1
+            fi
+            echo "OK: No PHP errors on frontend"
+
+            admin=$(curl -s -o /dev/null -w "%{http_code}" -L ${{ inputs.url }}/wp-admin/)
+            echo "WP Admin HTTP: $admin"
+            [ "$admin" = "200" ] || [ "$admin" = "302" ] || { echo "FAIL: WP Admin not accessible"; exit 1; }
+
+            echo "OK: All smoke tests passed"
