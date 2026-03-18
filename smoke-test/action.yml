@@ -31,4 +31,8 @@ runs:
             echo "WP Admin HTTP: $admin"
             [ "$admin" = "200" ] || [ "$admin" = "302" ] || { echo "FAIL: WP Admin not accessible"; exit 1; }
 
+            plugins=$(curl -s -o /dev/null -w "%{http_code}" -L ${{ inputs.url }}/wp-admin/plugins.php)
+            echo "Plugins Page HTTP: $plugins"
+            [ "$plugins" = "200" ] || [ "$plugins" = "302" ] || { echo "FAIL: Plugins page not accessible"; exit 1; }
+
             echo "OK: All smoke tests passed"
